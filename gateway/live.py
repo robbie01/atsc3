@@ -81,11 +81,19 @@ class Alp:
                 ln = int(bits[12 * i:12 * i + 12], 2)
                 yield from self.ip(p[o:o + ln]); o += ln
 
-    @staticmethod
-    def ip(p):
-        if len(p) < 28 or (p[0] >> 4) != 4 or p[9] != 17: return
-        ihl = (p[0] & 15) * 4
+    bad_ip = 0
+
+    @classmethod
+    def ip(cls, p):
+        """one IPv4/UDP datagram, if its header adds up: after a lost block the ALP stream can resynchronise on garbage"""
+        if len(p) < 28 or (p[0] >> 4) != 4 or p[9] != 17: cls.bad_ip += 1; return
+        ihl = (p[0] & 15) * 4; tl = struct.unpack('>H', p[2:4])[0]
+        if ihl < 20 or tl > len(p) or tl < ihl + 8: cls.bad_ip += 1; return
+        csum = sum(struct.unpack('>%dH' % (ihl // 2), p[:ihl]))
+        while csum >> 16: csum = (csum & 0xffff) + (csum >> 16)
+        if csum != 0xffff: cls.bad_ip += 1; return
         sp, dp, ul = struct.unpack('>HHH', p[ihl:ihl + 6])
+        if ul < 8 or ihl + ul > tl: cls.bad_ip += 1; return
         yield ('udp', '%d.%d.%d.%d' % tuple(p[16:20]), dp, p[ihl + 8:ihl + ul])
 
 
@@ -1092,7 +1100,7 @@ class H(BaseHTTPRequestHandler):
                     if len(r) > 4 and r[-1][0] > r[0][0]: kbps = round((r[-1][1] - r[0][1]) * 8 / (r[-1][0] - r[0][0]) / 1e3, 1)
                     flows[k.replace('_', ':')] = dict(kbps=kbps, signalling=sorted(f.sls), tracks={str(t): dict(kind=kd, rep=rp, codecs=i.get('codecs'), segments=len([1 for v in f.tracks[t]['segs'].values() if v[0]])) for t, kd, rp, i in tracks_of(f)},
                                                       open_objects=len(f.open))
-                return self.out(json.dumps(dict(decoder=S.decoder, uptime_s=round(now - S.started), frames=S.frames, signal=S.stat, services=len(S.services),
+                return self.out(json.dumps(dict(decoder=S.decoder, uptime_s=round(now - S.started), frames=S.frames, signal=S.stat, services=len(S.services), bad_ip_datagrams=Alp.bad_ip,
                                                 guide=dict(services=len(S.guide['services']), programmes=len(S.guide['content']), updated=S.guide['updated']),
                                                 link_mapping=S.lmt, flows=flows), indent=1))
             if p == '/discover.json':
