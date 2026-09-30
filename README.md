@@ -29,7 +29,7 @@ Requirements: Rust, uv, Homebrew `ffmpeg` (libopus), the pmpstream crate from pi
 `/live/<serviceId>/master.m3u8` HLS of the broadcast objects · `/app/<serviceId>` broadcaster app ·
 `/tables/` low-level signalling · `/status.json` `/snr.json` `/signal.txt` `/services.json` `/sls/<serviceId>`.
 
-Environment overrides: `A3RX`, `AC3CLI`, `AC4FF`, `A3_STATE`, `A3RX_TABLES`, `GR_ATSC3`, `GW_DEBUG=1`.
+Environment overrides: `A3RX`, `AC3CLI`, `A3_STATE`, `A3RX_TABLES`, `GR_ATSC3`, `GW_DEBUG=1`.
 
 ## Licence
 

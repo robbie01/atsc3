@@ -7,7 +7,7 @@ for the internet-delivered channels and the broadcaster apps, the programme guid
 
 The physical layer runs in ../a3rx (Rust); this program reads its baseband packets and does the rest.
 Transport only: objects are served exactly as broadcast.  Nothing is decrypted.
-Paths can be overridden with the environment: A3RX, AC3CLI, AC4FF (fallback FFmpeg with an AC-4 decoder), A3_STATE.
+Paths can be overridden with the environment: A3RX, AC3CLI, A3_STATE.
 """
 import argparse, collections, gzip, json, os, re, struct, subprocess, threading, time, zlib
 import xml.etree.ElementTree as ET
@@ -19,8 +19,6 @@ ROOT = os.path.dirname(HERE)
 A3RX = os.environ.get('A3RX') or os.path.join(ROOT, 'a3rx', 'target', 'release', 'a3rx')
 # ac3forge: a clean-room AC-4 decoder that handles every layout, the immersive (Atmos) presentations included
 AC3CLI = os.environ.get('AC3CLI') or os.path.join(ROOT, 'third_party', 'ac3forge', 'build', 'llvm', 'bin', 'ac3cli')
-# optional fallback: an FFmpeg built with the community AC-4 patch (mono to 7.1 only, and it runs 4% slow)
-AC4FF = os.environ.get('AC4FF') or ''
 STATE = os.environ.get('A3_STATE') or os.path.join(ROOT, 'state')
 os.makedirs(STATE, exist_ok=True)
 NTP = 2208988800
@@ -592,11 +590,10 @@ def audio_choice(sid, want='auto'):
         if not v: return None
         auds = [('t%d.m3u8' % t[0], t[3]) for t in tr if t[1] == 'audio']
         vp = 't%d.m3u8' % v[0]
-    if want == 'none' or not auds or not (os.path.exists(AC3CLI) or (AC4FF and os.path.exists(AC4FF))): return vp, None, 'no audio', 0
+    if want == 'none' or not auds or not os.path.exists(AC3CLI): return vp, None, 'no audio (ac3forge not built)', 0
     pick = int(want) if want.isdigit() and int(want) < len(auds) else 0
     a = auds[pick]
     ch, name = ac4_layout(a[1])
-    if not os.path.exists(AC3CLI) and ch > 6: return vp, None, 'no audio: %s is immersive AC-4, which only ac3forge decodes' % a[1].get('codecs'), 0
     note = 'track %d (%s, %s %s) as Opus %s' % (pick, a[1].get('lang') or 'und', a[1].get('codecs'), name, 'stereo' if ch <= 2 else '5.1' if ch <= 10 else '5.1, or 7.1 with ?ch=8')
     return vp, a[0], note, ch
 
@@ -1269,16 +1266,10 @@ class H(BaseHTTPRequestHandler):
         self.pump(pr, 'video/x-matroska' if mkv else 'video/mp2t')
 
     def ts_hls(self, s, f, pick, back):
-        """the internet-delivered channels (and a gateway without ac3forge): FFmpeg follows the HLS playlists itself"""
+        """a gateway without ac3forge: FFmpeg follows the HLS playlist itself, video only"""
         base = 'http://127.0.0.1:%d/live/%s/' % (self.server.server_address[1], s['id'])
-        ff = AC4FF if (AC4FF and os.path.exists(AC4FF)) else 'ffmpeg'
-        cmd = [ff, '-hide_banner', '-loglevel', 'error', '-live_start_index', back, '-i', base + pick[0]]
-        if pick[1] and pick[3] <= 6:
-            cmd += ['-live_start_index', back, '-i', base + pick[1], '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy',
-                    '-af', 'aformat=channel_layouts=5.1|stereo|mono', '-c:a', 'libopus', '-mapping_family', '1', '-b:a', '224k' if pick[3] > 2 else '128k']
-        else:
-            cmd += ['-map', '0:v:0', '-c', 'copy']
-        cmd += ['-muxdelay', '0', '-muxpreload', '0', '-flush_packets', '1', '-f', 'mpegts', '-mpegts_flags', 'resend_headers', 'pipe:1']
+        cmd = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-live_start_index', back, '-i', base + pick[0], '-map', '0:v:0', '-c', 'copy',
+               '-muxdelay', '0', '-muxpreload', '0', '-flush_packets', '1', '-f', 'mpegts', '-mpegts_flags', 'resend_headers', 'pipe:1']
         self.pump(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL))
 
     def pump(self, pr, ctype='video/mp2t'):
