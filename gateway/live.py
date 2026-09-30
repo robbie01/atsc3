@@ -718,7 +718,9 @@ def ac4_decode(init, segs, fold):
     """ac3forge decodes a whole file at a time, so the audio is decoded a window of segments at a time:
     float32 PCM, frames x `fold` channels (2, 6 or 8), whatever layout the presentation renders as"""
     import numpy as np
-    cmd = [AC3CLI, 'decode', '-', '-', 'conceal=repeat'] + (['channels=2', 'downmix=auto'] if fold == 2 else [])
+    # the stream's own downmix for stereo; for 5.1 / 7.1 ac3forge's channel renderer (TS 103 190-2 5.10.2) places the
+    # immersive element, and leaves a presentation that is already smaller alone
+    cmd = [AC3CLI, 'decode', '-', '-', 'conceal=repeat'] + (['channels=2', 'downmix=auto'] if fold == 2 else ['speakers=%s' % {6: '5.1', 8: '7.1'}[fold]])
     p = subprocess.run(cmd, input=init + b''.join(segs), capture_output=True, timeout=10)
     out = p.stdout
     if not out.startswith(b'RIFF'): return None
@@ -730,7 +732,7 @@ def ac4_decode(init, segs, fold):
         i += 8 + n + (n & 1)
     x = np.frombuffer(raw, dtype=np.float32 if bits == 32 else np.float64).reshape(-1, ch).astype(np.float32)
     if ch > fold:
-        # ac3forge writes L R C LFE Ls Rs [Lb Rb] Tfl Tfr Tbl Tbr; fold to FFmpeg's 5.1 (FL FR FC LFE BL BR) or 7.1 (.. BL BR SL SR),
+        # only with an ac3forge too old for speakers=: it writes L R C LFE Ls Rs [Lb Rb] Tfl Tfr Tbl Tbr; fold to FFmpeg's 5.1 (FL FR FC LFE BL BR) or 7.1 (.. BL BR SL SR),
         # heights -3 dB into the corners, and the backs into the surrounds when only 5.1 is wanted
         y = np.zeros((len(x), fold), np.float32)
         L, R, C, LFE, Ls, Rs = (x[:, i] for i in range(6))
