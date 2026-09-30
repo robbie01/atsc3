@@ -243,10 +243,12 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 [[package]]
 name = "pmp-proto"
 version = "0.1.0"
+source = "git+https://github.com/robbie01/pimpmypluto.git#d6e5bef860c9fcf718acc8719e391b8078bd4e85"
 
 [[package]]
 name = "pmpstream"
 version = "0.1.0"
+source = "git+https://github.com/robbie01/pimpmypluto.git#d6e5bef860c9fcf718acc8719e391b8078bd4e85"
 dependencies = [
  "nusb",
  "pmp-proto",
