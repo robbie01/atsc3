@@ -1,0 +1,10 @@
+[project]
+name = "atsc3"
+version = "0.1.0"
+description = "PlutoSDR ATSC 3.0 receiver and HTTP gateway"
+requires-python = ">=3.12"
+dependencies = ["numpy>=2"]
+
+[project.optional-dependencies]
+# only for tools/tables (regenerating the receiver's tables for a different station configuration)
+tables = ["scipy>=1.14"]

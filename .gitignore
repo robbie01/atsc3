@@ -1,0 +1,7 @@
+a3rx/target/
+state/
+third_party/ac3forge/build/
+third_party/gr-atsc3/
+.venv/
+__pycache__/
+*.ci16

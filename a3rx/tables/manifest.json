@@ -1,0 +1,199 @@
+{
+ "pil_ptr": {
+  "dtype": "<u4",
+  "shape": [
+   102
+  ]
+ },
+ "pil_car": {
+  "dtype": "<u2",
+  "shape": [
+   26437
+  ]
+ },
+ "pil_ref": {
+  "dtype": "<f4",
+  "shape": [
+   26437
+  ]
+ },
+ "pil_amp": {
+  "dtype": "<f4",
+  "shape": [
+   26437
+  ]
+ },
+ "group_first_sym": {
+  "dtype": "<u4",
+  "shape": [
+   11
+  ]
+ },
+ "group_nsym": {
+  "dtype": "<u4",
+  "shape": [
+   11
+  ]
+ },
+ "group_pattern": {
+  "dtype": "<u4",
+  "shape": [
+   11
+  ]
+ },
+ "pat0_kk": {
+  "dtype": "<u2",
+  "shape": [
+   1179
+  ]
+ },
+ "pat0_P": {
+  "dtype": "<f4",
+  "shape": [
+   145,
+   1179,
+   2
+  ]
+ },
+ "pat1_kk": {
+  "dtype": "<u2",
+  "shape": [
+   673
+  ]
+ },
+ "pat1_P": {
+  "dtype": "<f4",
+  "shape": [
+   145,
+   673,
+   2
+  ]
+ },
+ "patterns": [
+  {
+   "centre": 6912,
+   "n_kk": 1179
+  },
+  {
+   "centre": 6912,
+   "n_kk": 673
+  }
+ ],
+ "taus": {
+  "dtype": "<f4",
+  "shape": [
+   145
+  ]
+ },
+ "plp0_src": {
+  "dtype": "<u4",
+  "shape": [
+   4,
+   16200
+  ]
+ },
+ "plp0_u2cw": {
+  "dtype": "<u4",
+  "shape": [
+   64800
+  ]
+ },
+ "plp0_const": {
+  "dtype": "<f4",
+  "shape": [
+   16,
+   2
+  ]
+ },
+ "plp1_src": {
+  "dtype": "<u4",
+  "shape": [
+   160,
+   8100
+  ]
+ },
+ "plp1_u2cw": {
+  "dtype": "<u4",
+  "shape": [
+   64800
+  ]
+ },
+ "plp1_const": {
+  "dtype": "<f4",
+  "shape": [
+   256,
+   2
+  ]
+ },
+ "plps": [
+  {
+   "id": 0,
+   "mod_bits": 4,
+   "fec_blocks": 4,
+   "fec_cells": 16200,
+   "K": 38880,
+   "Kbch": 38688,
+   "N": 64800
+  },
+  {
+   "id": 1,
+   "mod_bits": 8,
+   "fec_blocks": 160,
+   "fec_cells": 8100,
+   "K": 38880,
+   "Kbch": 38688,
+   "N": 64800
+  }
+ ],
+ "ldpc_row_ptr": {
+  "dtype": "<u4",
+  "shape": [
+   25921
+  ]
+ },
+ "ldpc_col": {
+  "dtype": "<u4",
+  "shape": [
+   284759
+  ]
+ },
+ "ldpc": {
+  "N": 64800,
+  "K": 38880,
+  "M": 25920,
+  "E": 284759
+ },
+ "bch_gen": {
+  "dtype": "|u1",
+  "shape": [
+   193
+  ]
+ },
+ "bb_scramble": {
+  "dtype": "|u1",
+  "shape": [
+   38688
+  ]
+ },
+ "bootstrap_ref": {
+  "dtype": "<f4",
+  "shape": [
+   3456,
+   2
+  ]
+ },
+ "frame": {
+  "fs": 6912000,
+  "frame_len": 1720320,
+  "bs_len": 13824,
+  "nfft": 16384,
+  "gi": 512,
+  "sym": 16896,
+  "noc": 13825,
+  "nsym": 101,
+  "backoff": 128,
+  "l1_cells": 7528,
+  "preamble_noc": 13057,
+  "preamble_shift": 384
+ }
+}

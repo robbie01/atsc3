@@ -1,0 +1,20 @@
+[package]
+name = "a3rx"
+version = "0.1.0"
+edition = "2021"
+description = "Real-time ATSC 3.0 receiver for one station's configuration, driven by exported tables"
+
+[dependencies]
+# from github.com/robbie01/pimpmypluto, checked out beside this repository
+pmpstream = { path = "../../pimpmypluto/crates/pmpstream" }
+rustfft = "6"
+rayon = "1"
+num-complex = "0.4"
+serde_json = "1"
+libc = "0.2"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+debug = false
