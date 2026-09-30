@@ -568,11 +568,8 @@ CICP = {1: (1, 'mono'), 2: (2, 'stereo'), 3: (3, '3.0'), 6: (6, '5.1'), 7: (8, '
 
 
 def ac4_layout(info):
-    """channels, name of an audio representation: the MPD's channel configuration, else a guess from the AC-4 codecs
-    string (whose last field is the presentation's md_compat level, which on this station happens to track the layout)"""
-    if info.get('cicp') in CICP: return CICP[info['cicp']]
-    m = re.fullmatch(r'ac-4\.(\w+)\.(\w+)\.(\w+)', info.get('codecs') or '')
-    return {0: (2, 'stereo'), 1: (6, '5.1'), 2: (10, '5.1.4')}.get(int(m.group(3), 16) if m else -1, (2, 'stereo'))
+    """channels, name of an audio representation from the MPD's AudioChannelConfiguration (CICP)"""
+    return CICP.get(info.get('cicp'), (2, 'stereo'))
 
 
 def audio_choice(sid, want='auto'):
@@ -590,7 +587,7 @@ def audio_choice(sid, want='auto'):
         if not v: return None
         auds = [('t%d.m3u8' % t[0], t[3]) for t in tr if t[1] == 'audio']
         vp = 't%d.m3u8' % v[0]
-    if want == 'none' or not auds or not os.path.exists(AC3CLI): return vp, None, 'no audio (ac3forge not built)', 0
+    if want == 'none' or not auds: return vp, None, 'no audio', 0
     pick = int(want) if want.isdigit() and int(want) < len(auds) else 0
     a = auds[pick]
     ch, name = ac4_layout(a[1])
@@ -731,21 +728,8 @@ def ac4_decode(init, segs, fold):
         if tag == b'data': raw = out[i + 8:i + 8 + n]; break
         i += 8 + n + (n & 1)
     x = np.frombuffer(raw, dtype=np.float32 if bits == 32 else np.float64).reshape(-1, ch).astype(np.float32)
-    if ch > fold:
-        # only with an ac3forge too old for speakers=: it writes L R C LFE Ls Rs [Lb Rb] Tfl Tfr Tbl Tbr; fold to FFmpeg's 5.1 (FL FR FC LFE BL BR) or 7.1 (.. BL BR SL SR),
-        # heights -3 dB into the corners, and the backs into the surrounds when only 5.1 is wanted
-        y = np.zeros((len(x), fold), np.float32)
-        L, R, C, LFE, Ls, Rs = (x[:, i] for i in range(6))
-        Lb, Rb = (x[:, 6], x[:, 7]) if ch == 12 else (None, None)
-        Tfl, Tfr, Tbl, Tbr = (x[:, i] for i in range(ch - 4, ch)) if ch >= 10 else (0, 0, 0, 0)
-        y[:, 0] = L + 0.707 * Tfl; y[:, 1] = R + 0.707 * Tfr; y[:, 2] = C; y[:, 3] = LFE
-        if fold == 8:
-            y[:, 4] = (Lb if Lb is not None else Ls) + 0.707 * Tbl; y[:, 5] = (Rb if Rb is not None else Rs) + 0.707 * Tbr; y[:, 6] = Ls; y[:, 7] = Rs
-        else:
-            y[:, 4] = Ls + 0.707 * Tbl + (0.707 * Lb if Lb is not None else 0); y[:, 5] = Rs + 0.707 * Tbr + (0.707 * Rb if Rb is not None else 0)
-        x = y
-    elif ch < fold:
-        x = np.concatenate([x, np.zeros((len(x), fold - ch), np.float32)], axis=1)
+    if ch != fold:            # never with the renderer asked for `fold`; keep the shape ffmpeg was promised regardless
+        x = np.concatenate([x[:, :fold], np.zeros((len(x), max(0, fold - ch)), np.float32)], axis=1)
     return x
 
 
@@ -1221,7 +1205,6 @@ class H(BaseHTTPRequestHandler):
         back = str(-max(3, int(round(lead / d)) + 1)) if not (f and f.internet) else str(-max(2, int(round(lead / d))))
         if not s: return self.nf('no such channel')
         if not pick: return self.nf('that channel has no video yet')
-        if not os.path.exists(AC3CLI): return self.ts_hls(s, f, pick, back)
         fold = 2 if re.search(r'ch=2', self.path) else 0
         nch = 2 if fold else 8 if re.search(r'ch=8', self.path) and pick[3] > 6 else min(pick[3], 6)
         layout = {2: 'stereo', 6: '5.1', 8: '7.1'}[nch]
@@ -1267,13 +1250,6 @@ class H(BaseHTTPRequestHandler):
         if csrc and c0 is not None: threading.Thread(target=feed_captions, args=(csrc, c0, os.fdopen(cw, 'wb'), t_v), daemon=True).start()
         self.pump(pr, 'video/x-matroska' if mkv else 'video/mp2t')
 
-    def ts_hls(self, s, f, pick, back):
-        """a gateway without ac3forge: FFmpeg follows the HLS playlist itself, video only"""
-        base = 'http://127.0.0.1:%d/live/%s/' % (self.server.server_address[1], s['id'])
-        cmd = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-live_start_index', back, '-i', base + pick[0], '-map', '0:v:0', '-c', 'copy',
-               '-muxdelay', '0', '-muxpreload', '0', '-flush_packets', '1', '-f', 'mpegts', '-mpegts_flags', 'resend_headers', 'pipe:1']
-        self.pump(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL))
-
     def pump(self, pr, ctype='video/mp2t'):
         self.send_response(200); self.send_header('Content-Type', ctype); self.send_header('Connection', 'close'); self.end_headers()
         self.close_connection = True
@@ -1286,7 +1262,6 @@ class H(BaseHTTPRequestHandler):
         finally: pr.kill()
 
 
-TS_AUDIO = False
 TS_LEAD = 8.0
 
 if __name__ == '__main__':
@@ -1296,6 +1271,8 @@ if __name__ == '__main__':
     ap.add_argument('--ts-lead', type=float, default=8.0, help='seconds of programme a new MPEG-TS client is given at once')
     a = ap.parse_args()
     TS_LEAD = a.ts_lead
+    for exe, what in ((A3RX, 'the receiver (cd a3rx && cargo build --release)'), (AC3CLI, 'the AC-4 decoder (see README: third_party/ac3forge)')):
+        if not os.path.exists(exe): raise SystemExit('%s is missing: build %s' % (exe, what))
     threading.Thread(target=decoder, args=(a,), daemon=True).start()
     print('gateway on http://%s:%d/' % (a.bind, a.port), flush=True)
     srv = ThreadingHTTPServer((a.bind, a.port), H); srv.daemon_threads = True

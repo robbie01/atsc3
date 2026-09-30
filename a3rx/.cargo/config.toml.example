@@ -1,3 +1,4 @@
 # Copy to .cargo/config.toml (gitignored) to build against a local checkout of pimpmypluto instead of the
-# git dependency in Cargo.toml.  A `paths` override leaves Cargo.lock pinned to the git revision.
-paths = ["/Users/you/pimpmypluto/crates/pmpstream"]
+# revision Cargo.lock pins.  Cargo then records the patch in Cargo.lock; do not commit that change.
+[patch."https://github.com/robbie01/pimpmypluto.git"]
+pmpstream = { path = "/Users/you/pimpmypluto/crates/pmpstream" }
