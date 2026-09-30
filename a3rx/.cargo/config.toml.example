@@ -1,0 +1,4 @@
+# Copy to .cargo/config.toml (which is gitignored) to build against a local checkout of pimpmypluto
+# instead of the git dependency in Cargo.toml.
+[patch."https://github.com/robbie01/pimpmypluto.git"]
+pmpstream = { path = "/Users/you/pimpmypluto/crates/pmpstream" }

@@ -5,8 +5,7 @@ edition = "2021"
 description = "Real-time ATSC 3.0 receiver for one station's configuration, driven by exported tables"
 
 [dependencies]
-# from github.com/robbie01/pimpmypluto, checked out beside this repository
-pmpstream = { path = "../../pimpmypluto/crates/pmpstream" }
+pmpstream = { git = "https://github.com/robbie01/pimpmypluto.git" }   # a local checkout can be used instead: see .cargo/config.toml.example
 rustfft = "6"
 rayon = "1"
 num-complex = "0.4"

@@ -5,3 +5,4 @@ third_party/gr-atsc3/
 .venv/
 __pycache__/
 *.ci16
+a3rx/.cargo/config.toml

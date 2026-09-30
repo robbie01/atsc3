@@ -19,7 +19,9 @@ guide, a live signal meter and an outage log.  Transport only: nothing is decryp
 | `third_party/gr-atsc3` | drmpeg/gr-atsc3 checkout, read for its constant tables only (not built). |
 | `state/` | runtime: `signal.log` (outages and signalling events, JSON lines), `services_last.json`, logs. |
 
-Requirements: Rust, uv, Homebrew `ffmpeg` (libopus), the pmpstream crate from pimpmypluto (path in `a3rx/Cargo.toml`).
+Requirements: Rust, uv, Homebrew `ffmpeg` (libopus).  The receiver's `pmpstream` crate is a git dependency on
+[pimpmypluto](https://github.com/robbie01/pimpmypluto); to build against a local checkout instead, copy
+`a3rx/.cargo/config.toml.example` to `a3rx/.cargo/config.toml` and set the path.
 
 ## Endpoints
 
@@ -35,4 +37,4 @@ Environment overrides: `A3RX`, `AC3CLI`, `A3_STATE`, `A3RX_TABLES`, `GR_ATSC3`, 
 
 AGPL-3.0-or-later (see `LICENSE`).  `third_party/ac3forge` is GPL-3.0 (its own licence applies); `third_party/gr-atsc3`
 (GPL-3.0) is read for its constant tables and is not part of this repository.  The `pmpstream` crate the receiver uses
-comes from [pimpmypluto](https://github.com/robbie01/pimpmypluto), expected checked out next to this repository.
+comes from [pimpmypluto](https://github.com/robbie01/pimpmypluto) (AGPL-3.0-or-later).
